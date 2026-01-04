@@ -61,7 +61,7 @@ jobs:
 
     steps:
       - name: Checkout Repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Validate Configuration
         run: |
@@ -463,4 +463,5 @@ jobs:
               echo "No"
             fi
           )" >> $GITHUB_STEP_SUMMARY
+
 
