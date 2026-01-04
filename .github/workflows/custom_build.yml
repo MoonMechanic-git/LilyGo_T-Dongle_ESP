@@ -108,7 +108,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y wget git flex bison gperf python3-pip python3-setuptools cmake ninja-build ccache libffi-dev libssl-dev dfu-util
           git clone -b v5.3.1 --depth 1 https://github.com/espressif/esp-idf.git ~/esp-idf
-          ~/esp-idf/install.sh
+          cd ~/esp-idf
+          ./install.sh ${{ github.event.inputs.board_type }}
 
       - name: Generate Custom SDK Config
         run: |
@@ -176,17 +177,26 @@ jobs:
 
       - name: Set up ESP-IDF and Target
         run: |
-         cd ~/esp-idf
-         ./install.sh
-         . ./export.sh
-         export IDF_TARGET=${{ github.event.inputs.boardtype }}
-         echo "IDF_TARGET=${{ github.event.inputs.boardtype }}" >> $GITHUB_ENV
-
+          # Remove any corrupted Python environment from previous runs
+          rm -rf ~/.espressif/python_env
+          rm -f ~/.espressif/idf-env.json
+          
+          # Ensure tools are installed
+          cd ~/esp-idf
+          ./install.sh ${{ github.event.inputs.board_type }}
+          
+          # Source ESP-IDF environment
+          . ./export.sh
+          
+          # Set target
+          export IDF_TARGET=${{ github.event.inputs.board_type }}
+          echo "IDF_TARGET=${{ github.event.inputs.board_type }}" >> $GITHUB_ENV
 
       - name: Download Bootloader
         run: |
           BOOTLOADER_URL="https://cdn.spookytools.com/bootloaders/${{ github.event.inputs.board_type }}.bin"
           BOOTLOADER_PATH="build/bootloader.bin"
+          mkdir -p build
           echo "Downloading bootloader from $BOOTLOADER_URL..."
           curl -L -o "$BOOTLOADER_PATH" "$BOOTLOADER_URL" || {
             echo "Warning: Could not download bootloader, continuing with build..."
@@ -236,4 +246,3 @@ jobs:
               echo "No"
             fi
           )" >> $GITHUB_STEP_SUMMARY
-
