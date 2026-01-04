@@ -52,7 +52,7 @@ on:
           - 4MB
           - 8MB
           - 16MB
-        default: '16MB'
+        default: '4MB'
 
 jobs:
   build:
@@ -103,7 +103,7 @@ jobs:
             python3 python3-pip python3-venv \
             cmake ninja-build ccache \
             libffi-dev libssl-dev dfu-util libusb-1.0-0
-          
+
           echo "✓ Python version:"
           python3 --version
           echo "✓ pip version:"
@@ -113,22 +113,22 @@ jobs:
         run: |
           mkdir -p ~/esp
           cd ~/esp
-          
+
           echo "Cloning ESP-IDF v5.3.1..."
           git clone -b v5.3.1 --depth 1 https://github.com/espressif/esp-idf.git
-          
+
           if [ ! -d "esp-idf" ]; then
             echo "ERROR: ESP-IDF clone failed!"
             exit 1
           fi
-          
+
           cd esp-idf
           echo "Installing tools for ${{ github.event.inputs.board_type }}..."
           ./install.sh all
-          
+
           echo "Sourcing ESP-IDF environment..."
           . ./export.sh
-          
+
           echo "✓ Verifying ESP-IDF installation:"
           idf.py --version
           which idf.py
@@ -137,14 +137,13 @@ jobs:
         run: |
           echo "IDF_PATH=$HOME/esp/esp-idf" >> $GITHUB_ENV
           echo "IDF_TARGET=${{ github.event.inputs.board_type }}" >> $GITHUB_ENV
-          # Persist PATH with ESP-IDF tools
           export PATH="$HOME/esp/esp-idf/tools:$PATH"
           echo "PATH=$PATH" >> $GITHUB_ENV
 
       - name: Generate SDK Configuration
         run: |
           cd ${{ github.workspace }}
-          
+
           if [ "${{ github.event.inputs.display_type }}" != "custom" ] && [ "${{ github.event.inputs.display_type }}" != "none" ]; then
             case "${{ github.event.inputs.display_type }}" in
               "MarauderV4_FlipperHub") cp "configs/sdkconfig.marauderv4" sdkconfig.defaults ;;
@@ -165,7 +164,7 @@ jobs:
             else
               touch sdkconfig.defaults
             fi
-            
+
             if [ "${{ github.event.inputs.display_type }}" == "custom" ]; then
               cat >> sdkconfig.defaults << EOF
           CONFIG_WITH_SCREEN=y
@@ -174,7 +173,7 @@ jobs:
           EOF
             fi
           fi
-          
+
           if [ "${{ github.event.inputs.use_touch }}" == "true" ] || \
              [ "${{ github.event.inputs.display_type }}" == "ESP32-S3-Cardputer" ] || \
              [ "${{ github.event.inputs.display_type }}" == "LillyGoTWatch_S3" ] || \
@@ -183,23 +182,22 @@ jobs:
           fi
 
           echo "CONFIG_ESPTOOLPY_FLASHSIZE=\"${{ github.event.inputs.flash_size }}\"" >> sdkconfig.defaults
-          
+
           echo "✓ Generated sdkconfig.defaults:"
           cat sdkconfig.defaults
 
       - name: Build Firmware
         run: |
           cd ${{ github.workspace }}
-          
-          # Source ESP-IDF environment fresh
+
           . ${{ env.IDF_PATH }}/export.sh
-          
+
           echo "Setting target: ${{ github.event.inputs.board_type }}"
           idf.py set-target ${{ github.event.inputs.board_type }}
-          
+
           echo "Building firmware..."
           idf.py build
-          
+
           echo "✓ Build complete. Binaries in build/ directory:"
           ls -lh build/*.bin || echo "No .bin files found!"
 
@@ -207,19 +205,19 @@ jobs:
         run: |
           ZIP_FILE="ghost_esp_${{ github.event.inputs.board_type }}_${{ github.event.inputs.display_type }}.zip"
           mkdir -p artifacts
-          
+
           cd ${{ github.workspace }}
           find build -name "*.bin" -exec cp {} artifacts/ \;
-          
+
           if [ ! "$(ls -A artifacts)" ]; then
             echo "ERROR: No .bin files found in artifacts!"
             exit 1
           fi
-          
+
           cd artifacts
           zip "../$ZIP_FILE" ./*
           cd ..
-          
+
           echo "✓ Package contents:"
           unzip -l "$ZIP_FILE"
 
@@ -230,9 +228,17 @@ jobs:
           path: ghost_esp_${{ github.event.inputs.board_type }}_${{ github.event.inputs.display_type }}.zip
 
       - name: Build Summary
-        run: | 
+        run: |
+          TOUCH_STATUS="No"
+          if [ "${{ github.event.inputs.use_touch }}" == "true" ] || \
+             [ "${{ github.event.inputs.display_type }}" == "ESP32-S3-Cardputer" ] || \
+             [ "${{ github.event.inputs.display_type }}" == "LillyGoTWatch_S3" ] || \
+             [[ "${{ github.event.inputs.display_type }}" == CYD* ]]; then
+            TOUCH_STATUS="Yes"
+          fi
+
           echo "### ✓ Build Complete!" >> $GITHUB_STEP_SUMMARY
           echo "- **Board:** ${{ github.event.inputs.board_type }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Display:** ${{ github.event.inputs.display_type }}" >> $GITHUB_STEP_SUMMARY
           echo "- **Flash:** ${{ github.event.inputs.flash_size }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Touch:** $([ "${{ github.event.inputs.use_touch }}" == 'true' ] && echo 'Yes' || echo 'No')" >> $GITHUB_STEP_SUMMARY
+          echo "- **Touch:** $TOUCH_STATUS" >> $GITHUB_STEP_SUMMARY
