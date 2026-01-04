@@ -278,24 +278,3 @@ jobs:
           echo "- **Touch Support:** $TOUCH_ENABLED" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "**Download your firmware from the Artifacts section above.** ⬆️" >> $GITHUB_STEP_SUMMARY
-```
-
-## **Key Fixes Applied:**
-
-1. **Removed duplicate `install.sh`** - Only runs once in "Setup ESP-IDF Environment" step[1]
-2. **Added `idf.py set-target`** - Properly sets the build target
-3. **Split ESP-IDF installation** into separate clear steps
-4. **Added error handling** in bootloader download with `-f` flag to fail silently
-5. **Changed to `idf.py fullclean`** instead of just `clean`
-6. **Added config file fallback** - Creates empty sdkconfig.defaults if base doesn't exist
-7. **Added debugging output** - Shows generated config and packaged files
-8. **Improved artifact packaging** - Uses `find` to get all .bin files
-9. **Consistent use of `source`** instead of `.` for bash compatibility
-10. **Added `IDF_PATH` to environment** for all subsequent steps
-
-This workflow is now **error-free and ready to use**. Save it to `.github/workflows/custom-build.yml` and test it!
-
-Sources
-[1] job-logs.txt https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/28141176/a20453e9-eb2d-4c4b-848e-f55c98d67ee7/job-logs.txt
-[2] 0_Build-Custom-Firmware.txt https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/28141176/7d8a2379-ef8f-4641-9f33-d64ffada4578/0_Build-Custom-Firmware.txt
-[3] 7_Set-up-ESP-IDF-and-Target.txt https://ppl-ai-file-upload.s3.amazonaws.com/web/direct-files/attachments/28141176/e39b5f4e-adf7-4354-a8a7-40c815585ed6/7_Set-up-ESP-IDF-and-Target.txt
