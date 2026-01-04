@@ -1,6 +1,3 @@
-Here's the **complete, debugged YAML file** ready to use:
-
-```yaml
 name: Custom Build
 
 on:
